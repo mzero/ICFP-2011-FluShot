@@ -42,7 +42,7 @@ data Value = Num !Int
            | Func3 !String (Value -> Value -> Value -> Exec Value)
 
 valueName :: Value -> String
-valueName (Num i) = show i
+valueName (Num i) | i == 0 = "zero" | otherwise = show i
 valueName (Func1 n _) = n
 valueName (Func2 n _) = n
 valueName (Func3 n _) = n
