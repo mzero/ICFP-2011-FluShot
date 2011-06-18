@@ -17,6 +17,13 @@ module Main (
 ) where
 
 import Main.Interactive
+import System.Environment
 
-main = onlyMain
+
+main :: IO ()
+main = do
+  args <- getArgs
+  case args of
+    ["alt"] -> altMain
+    ["only"] -> onlyMain
 

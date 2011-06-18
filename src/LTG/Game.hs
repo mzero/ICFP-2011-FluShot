@@ -15,7 +15,7 @@
 module LTG.Game (
   Value(..), valueName, identity,
   Slot(..), alive, dead, zombie,
-  State, initState,
+  State, initState, switchSides,
   Exec,
   execute,
   execError, precondition,
@@ -26,7 +26,6 @@ module LTG.Game (
   apply,
   zombify,
   zombieEffect,
-  switchSides,
 ) where
 
 import Control.Monad
@@ -71,6 +70,11 @@ initState = State initMemory initMemory
     initSlot = Slot initValue initVitality
     initValue = identity
     initVitality = 10000
+
+switchSides :: State -> State
+switchSides s = s { stPro = stOp s, stOp = stPro s }
+
+
 
 proSlots :: State -> [Slot]
 proSlots = V.toList . stPro
@@ -190,8 +194,4 @@ zombieEffect i = do
     z <- esZombied `fmap` get
     return $ if z then (-i) else i
 
-switchSides :: Exec ()
-switchSides = modifyState switch
-  where
-    switch s = s { stPro = stOp s, stOp = stPro s }
 

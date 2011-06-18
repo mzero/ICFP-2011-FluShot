@@ -15,7 +15,6 @@
 module LTG.Play (
     Application(..),
     play,
-    turn,
 ) where
 
 import Control.Monad
@@ -61,7 +60,4 @@ play :: Application -> Int -> Value -> Exec ()
 play app i c = do
     activateZombies
     appMove app i c
-
-turn :: Application -> Int -> Value -> Exec ()
-turn app i c = play app i c >> switchSides
 
