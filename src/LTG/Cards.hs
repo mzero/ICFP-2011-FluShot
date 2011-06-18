@@ -13,7 +13,8 @@
 -----------------------------------------------------------------------------
 
 module LTG.Cards (
-    cards
+    Card,
+    cards,
 ) where
 
 import LTG.Game

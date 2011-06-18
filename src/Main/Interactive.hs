@@ -18,6 +18,7 @@ module Main.Interactive (
 ) where
 
 import Control.Monad (join)
+import Data.Maybe (listToMaybe)
 import LTG.Game
 import LTG.Cards
 import LTG.Play
@@ -40,22 +41,20 @@ interactiveStartup = do
 playAlt :: Int -> State -> IO ()
 playAlt turn s = do
     putStrLn $ "###### turn " ++ show turn
-    putStrLn "*** player 0's turn, with slots:"
-    s0 <- switchSides `fmap` playTurn s
-    putStrLn "*** player 1's turn, with slots:"
-    s1 <- switchSides `fmap` playTurn s0
+    s0 <- switchSides `fmap` playTurn "0" s
+    s1 <- switchSides `fmap` playTurn "1" s0
     playAlt (turn + 1) s1
 
 
 playOneSided :: Int -> State -> IO ()
 playOneSided turn s = do
     putStrLn $ "###### turn " ++ show turn
-    putStrLn "*** player 0's turn, with slots:"
-    playTurn s >>= playOneSided (turn + 1)
+    playTurn "0" s >>= playOneSided (turn + 1)
 
 
-playTurn :: State -> IO State
-playTurn s = do
+playTurn :: String -> State -> IO State
+playTurn p s = do
+    putStrLn $ "*** player " ++ p ++ "'s turn, with slots:"
     mapM_ putStrLn $ showProState s
     putStrLn "(1) apply card to slot, or (2) apply slot to card?"
     ma <- readApply `fmap` getLine
@@ -65,17 +64,20 @@ playTurn s = do
         Just RightApply -> slotThenCard
   where
     reportError msg = putStrLn ("Exception: Failure(" ++ show msg ++ ")") >> return s
+    reportApply a b = putStrLn $ "player " ++ p ++ " applied " ++ a ++ " to " ++ b
     cardThenSlot = do
         putStrLn "card name?"
         mc <- readCard `fmap` getLine
         case mc of
             Nothing -> reportError "unknown card"
-            Just c -> do
+            Just (cn, c) -> do
                 putStrLn "slot no?"
                 ms <- readSlot `fmap` getLine
                 case ms of
                     Nothing -> reportError "not a slot"
-                    Just i -> return $ execute (play LeftApply i c) s
+                    Just i -> do
+                        reportApply ("card " ++ cn) ("slot " ++ show i)
+                        return $ execute (play LeftApply i c) s
 
     slotThenCard = do
         putStrLn "slot no?"
@@ -87,7 +89,9 @@ playTurn s = do
                 mc <- readCard `fmap` getLine
                 case mc of
                     Nothing -> reportError "not a slot"
-                    Just c -> return $ execute (play RightApply i c) s
+                    Just (cn, c) -> do
+                        reportApply ("slot " ++ show i) ("card " ++ cn)
+                        return $ execute (play RightApply i c) s
 
 
 readApply :: String -> Maybe Application
@@ -98,8 +102,8 @@ readApply = join . (decodeApply `fmap`) . readAs
     decodeApply 2 = Just RightApply
     decodeApply _ = Nothing
 
-readCard :: String -> Maybe Value
-readCard =  (`lookup` cards)
+readCard :: String -> Maybe Card
+readCard s =  listToMaybe $ filter ((==s).fst) cards
 
 readSlot :: String -> Maybe Int
 readSlot = join . (inRange `fmap`) . readAs
