@@ -18,10 +18,10 @@ module Main.Interactive (
 ) where
 
 import Control.Monad (join)
-import Data.Maybe (listToMaybe)
 import LTG.Game
 import LTG.Cards
 import LTG.Play
+import Main.Utils
 import System.IO
 
 altMain :: IO ()
@@ -93,6 +93,7 @@ playTurn s = do
 readApply :: String -> Maybe Application
 readApply = join . (decodeApply `fmap`) . readAs
   where
+    decodeApply :: Int -> Maybe Application
     decodeApply 1 = Just LeftApply
     decodeApply 2 = Just RightApply
     decodeApply _ = Nothing
@@ -105,15 +106,13 @@ readSlot = join . (inRange `fmap`) . readAs
   where
     inRange i = if 0 <= i && i <= 255 then Just i else Nothing
 
-readAs :: (Read a) => String -> Maybe a
-readAs = (fst `fmap`) . listToMaybe . filter (null.snd) . reads
 
 
 
 showProState :: State -> [String]
-showProState = trailer . map showSlot . filter (not . normal) . zip [0..] . proSlots
+showProState = trailer . map showSlot . filter (not . normal) . zip [(0::Int)..] . proSlots
   where
-    normal (i, s) = slVitality s == 10000 && valueName (slField s) == "I"
+    normal (_, s) = slVitality s == 10000 && valueName (slField s) == "I"
     showSlot (i, s) = show i ++ "={" ++ show (slVitality s) ++ "," ++ valueName (slField s) ++ "}"
     trailer = (++ ["(slots {10000,I} are omitted)"])
 

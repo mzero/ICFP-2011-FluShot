@@ -1,6 +1,6 @@
 -----------------------------------------------------------------------------
 --
--- Module      :  Main
+-- Module      :  Main.Utils
 -- Copyright   :
 -- License     :  AllRightsReserved
 --
@@ -12,20 +12,13 @@
 --
 -----------------------------------------------------------------------------
 
-module Main (
-    main
+module Main.Utils (
+    readAs
 ) where
 
-import Main.Generate
-import Main.Interactive
-import System.Environment
+import Data.Maybe (listToMaybe)
 
 
-main :: IO ()
-main = do
-  args <- getArgs
-  case args of
-    ["alt"] -> altMain
-    ["only"] -> onlyMain
-    ["gen", n] -> genMain n
-    _ -> putStrLn "huh?"
+readAs :: (Read a) => String -> Maybe a
+readAs = (fst `fmap`) . listToMaybe . filter (null.snd) . reads
+

@@ -19,7 +19,9 @@ module LTG.Cards (
 import LTG.Game
 
 
-cards :: [(String, Value)]
+type Card = (String, Value)
+
+cards :: [Card]
 cards = [ cardIdentity
         , cardZero
         , cardSucc
@@ -37,10 +39,21 @@ cards = [ cardIdentity
         , cardZombie
         ]
 
+
+card :: String -> Value -> Card
+card1 :: String -> (Value -> Exec Value) -> Card
+card2 :: String -> (Value -> Value -> Exec Value) -> Card
+card3 :: String -> (Value -> Value -> Value -> Exec Value) -> Card
+
 card n v = (n, v)
 card1 n f = card n $ Func1 n f
 card2 n f = card n $ Func2 n f
 card3 n f = card n $ Func3 n f
+
+
+cardIdentity, cardZero, cardSucc, cardDouble, cardGet, cardPut, cardS, cardK
+    , cardInc, cardDec, cardAttack, cardHelp, cardCopy, cardRevive, cardZombie
+    :: Card
 
 cardIdentity = card "I" identity
 
@@ -79,7 +92,7 @@ cardS = card3 "S" s
 
 cardK = card2 "K"  k
   where
-    k x y = return x
+    k x _y = return x
 
 
 
@@ -147,13 +160,13 @@ cardRevive = card1 "revive" revive
         return identity
     revive _ = execError
 
-cardZombie = card2 "zombie" zombie
+cardZombie = card2 "zombie" zombieC
   where
-    zombie (Num i) x = do
+    zombieC (Num i) x = do
         s <- getOpSlotRev i
         precondition $ dead s
         putOpSlotRev i $ Slot { slField = x, slVitality = -1 }
         return identity
-    zombie _ _ = execError
+    zombieC _ _ = execError
 
 

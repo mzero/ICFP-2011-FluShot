@@ -46,6 +46,7 @@ valueName (Func1 n _) = n
 valueName (Func2 n _) = n
 valueName (Func3 n _) = n
 
+identity :: Value
 identity = Func1 "I" return
 
 
@@ -64,6 +65,7 @@ data State = State {
     stOp :: !Memory
     }
 
+initState :: State
 initState = State initMemory initMemory
   where
     initMemory = V.replicate 256 initSlot
@@ -95,13 +97,13 @@ instance Monad Exec where
     m >>= g = Exec (\e -> case runExec m e of
                             (Nothing, e') -> (Nothing, e')
                             (Just a, e') -> runExec (g a) e')
-    fail msg = Exec (\e -> (Nothing, e))
+    fail _msg = Exec (\e -> (Nothing, e))
 
 instance MonadPlus Exec where
     mzero = fail "mzero"
     a `mplus` b = Exec (\e -> case runExec a e of
                             (Nothing, _) -> runExec b e
-                            k@(Just a, e') -> k)
+                            k@(Just _, _) -> k)
 
 execute :: Exec a -> State -> State
 execute m s = esState . snd $ runExec m baseState
@@ -143,7 +145,7 @@ getProSlot = validSlot stPro
 
 putProSlot :: Int -> Slot -> Exec ()
 putProSlot i s = do
-    validSlot stPro i
+    _ <- validSlot stPro i
     modifyProMemory (V.modify (\v -> VM.write v i s))
 
 
@@ -152,7 +154,7 @@ getOpSlotRev i = validSlot stOp (255 - i)
 
 putOpSlotRev :: Int -> Slot -> Exec ()
 putOpSlotRev i s = let i' = 255 - i in do
-    validSlot stOp i'
+    _ <- validSlot stOp i'
     modifyOpMemory (V.modify (\v -> VM.write v i' s))
 
 getOpSlot :: Int -> Exec Slot
@@ -165,20 +167,19 @@ slotRange = do
     return (0, V.length m)
 
 apply :: Value -> Value -> Exec Value
-apply f v = do
+apply w v = do
     e <- get
     let ac = esApplyCount e
     precondition (ac < 1000)
     put e { esApplyCount = ac + 1 }
-    apply' f v
+    apply' w
   where
-    apply' (Num _) _ = execError
-    apply' (Func3 n f) v = return $ Func2 (applyName n v) (f v)
-    apply' (Func2 n f) v = return $ Func1 (applyName n v) (f v)
-    apply' (Func1 _ f) v = f v
+    apply' (Num _) = execError
+    apply' (Func3 n f) = return $ Func2 (applyName n) (f v)
+    apply' (Func2 n f) = return $ Func1 (applyName n) (f v)
+    apply' (Func1 _ f) = f v
 
-    applyName :: String -> Value -> String
-    applyName s v = s ++ "(" ++ valueName v ++ ")"
+    applyName s = s ++ "(" ++ valueName v ++ ")"
 
 
 zombify :: Exec a -> Exec a

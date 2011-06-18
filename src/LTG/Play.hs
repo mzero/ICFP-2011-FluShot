@@ -46,7 +46,7 @@ zombieMove :: Int -> Exec ()
 zombieMove i = do
     s <- getProSlot i
     precondition $ zombie s
-    v <- apply (slField s) identity `mplus` return identity
+    _v <- apply (slField s) identity `mplus` return identity
     putProSlot i $ Slot { slField = identity, slVitality = 0 }
 
 

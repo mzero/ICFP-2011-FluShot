@@ -6,7 +6,7 @@ license: AllRightsReserved
 license-file: ""
 copyright:
 maintainer:
-build-depends: vector -any, mtl -any, base -any
+build-depends: base -any, mtl -any, random -any, vector -any
 stability:
 homepage:
 package-url:
@@ -42,10 +42,11 @@ includes:
 install-includes:
 include-dirs:
 hs-source-dirs: src
-other-modules: Main.Interactive LTG.Play LTG.Cards LTG.Game
+other-modules: LTG.Cards LTG.Game LTG.Play Main.Generate
+               Main.Interactive Main.Utils
 ghc-prof-options:
 ghc-shared-options:
-ghc-options:
+ghc-options: -Wall -Werror
 hugs-options:
 nhc98-options:
 jhc-options:
