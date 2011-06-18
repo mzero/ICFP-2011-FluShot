@@ -15,10 +15,13 @@
 module LTG.Types (
   Value(..), valueName, identity,
   Slot(..), alive, dead, zombie,
-  ExecState(..), Exec(..), apply, execError,
+  Exec,
+  execError, guard,
   getProSlot, putProSlot,
   getOpSlotRev, putOpSlotRev,
   getOpSlot,
+  apply,
+  zombieEffect,
 ) where
 
 import qualified Data.Vector as V
@@ -68,7 +71,7 @@ initState = State initMemory initMemory
 data ExecState = ES
     { esApplyCount :: !Int
     , esState :: !State
-    , esApplyZombied :: !Bool
+    , esZombied :: !Bool
     }
 
 newtype Exec a = Exec { runExec :: ExecState -> (Maybe a, ExecState) }
@@ -153,6 +156,10 @@ apply f v = do
     applyName s v = s ++ "(" ++ valueName v ++ ")"
 
 
+zombieEffect ::  Int -> Exec Int
+zombieEffect i = do
+    z <- esZombied `fmap` get
+    return $ if z then (-i) else i
 
 data Application = LeftApply | RightApply
 data Move = Move
