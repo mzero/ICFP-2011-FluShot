@@ -105,7 +105,7 @@ cardDec = card1 "dec" dec
   where
     dec (Num i) = do
         s <- getOpSlotRev i
-        zombieEffect (-1) >>= adjustVitality s >>= putProSlot i
+        zombieEffect (-1) >>= adjustVitality s >>= putOpSlotRev i
         return identity
     dec _ = execError
 
