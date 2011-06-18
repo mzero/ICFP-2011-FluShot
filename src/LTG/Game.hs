@@ -15,15 +15,21 @@
 module LTG.Game (
   Value(..), valueName, identity,
   Slot(..), alive, dead, zombie,
+  State, initState,
   Exec,
-  execError, guard,
+  execute,
+  execError, precondition,
   getProSlot, putProSlot,
   getOpSlotRev, putOpSlotRev,
   getOpSlot,
+  slotRange, proSlots,
   apply,
+  zombify,
   zombieEffect,
+  switchSides,
 ) where
 
+import Control.Monad
 import qualified Data.Vector as V
 import qualified Data.Vector.Mutable as VM
 
@@ -66,7 +72,8 @@ initState = State initMemory initMemory
     initValue = identity
     initVitality = 10000
 
-
+proSlots :: State -> [Slot]
+proSlots = V.toList . stPro
 
 data ExecState = ES
     { esApplyCount :: !Int
@@ -86,12 +93,22 @@ instance Monad Exec where
                             (Just a, e') -> runExec (g a) e')
     fail msg = Exec (\e -> (Nothing, e))
 
+instance MonadPlus Exec where
+    mzero = fail "mzero"
+    a `mplus` b = Exec (\e -> case runExec a e of
+                            (Nothing, _) -> runExec b e
+                            k@(Just a, e') -> k)
+
+execute :: Exec a -> State -> State
+execute m s = esState . snd $ runExec m baseState
+  where baseState = ES { esApplyCount = 0, esState = s, esZombied = False }
+
 
 execError :: Exec a
 execError = fail undefined
 
-guard :: Bool -> Exec ()
-guard b = if b then return () else execError
+precondition :: Bool -> Exec ()
+precondition b = if b then return () else execError
 
 
 get :: Exec ExecState
@@ -114,7 +131,7 @@ modifyOpMemory f = modifyState (\s -> s { stOp = f (stOp s) })
 validSlot :: (State -> Memory) -> Int -> Exec Slot
 validSlot t i = do
     m <- (t.esState) `fmap` get
-    guard (0 <= i  &&  i < V.length m)
+    precondition (0 <= i  &&  i < V.length m)
     return $ m V.! i
 
 getProSlot :: Int -> Exec Slot
@@ -138,12 +155,16 @@ getOpSlot :: Int -> Exec Slot
 getOpSlot = validSlot stOp
 
 
+slotRange :: Exec (Int, Int)
+slotRange = do
+    m <- (stPro.esState) `fmap` get
+    return (0, V.length m)
 
 apply :: Value -> Value -> Exec Value
 apply f v = do
     e <- get
     let ac = esApplyCount e
-    guard (ac < 1000)
+    precondition (ac < 1000)
     put e { esApplyCount = ac + 1 }
     apply' f v
   where
@@ -156,14 +177,21 @@ apply f v = do
     applyName s v = s ++ "(" ++ valueName v ++ ")"
 
 
+zombify :: Exec a -> Exec a
+zombify m = do
+    modify (\e -> e { esZombied = True })
+    a <- m
+    modify (\e -> e { esZombied = False })
+    return a
+
+
 zombieEffect ::  Int -> Exec Int
 zombieEffect i = do
     z <- esZombied `fmap` get
     return $ if z then (-i) else i
 
-data Application = LeftApply | RightApply
-data Move = Move
-    { mApp :: Application
-    , mIndex :: Int
-    , mCard :: Value
-    }
+switchSides :: Exec ()
+switchSides = modifyState switch
+  where
+    switch s = s { stPro = stOp s, stOp = stPro s }
+

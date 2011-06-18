@@ -114,7 +114,7 @@ cardAttack = card3 "attack" attack
   where
     attack (Num i) (Num j) (Num n) = do
       s <- getProSlot i
-      guard $ slVitality s >= n
+      precondition $ slVitality s >= n
       adjustVitality s (-n) >>= putProSlot i
       t <- getOpSlotRev j
       zombieEffect (-(n*9`div`10)) >>= adjustVitality t >>= putOpSlotRev j
@@ -125,7 +125,7 @@ cardHelp = card3 "help" help
   where
     help (Num i) (Num j) (Num n) = do
       s <- getProSlot i
-      guard $ slVitality s >= n
+      precondition $ slVitality s >= n
       adjustVitality s (-n) >>= putProSlot i
       t <- getProSlot j
       zombieEffect (n*11`div`10) >>= adjustVitality t >>= putProSlot j
@@ -151,7 +151,7 @@ cardZombie = card2 "zombie" zombie
   where
     zombie (Num i) x = do
         s <- getOpSlotRev i
-        guard $ dead s
+        precondition $ dead s
         putOpSlotRev i $ Slot { slField = x, slVitality = -1 }
         return identity
     zombie _ _ = execError

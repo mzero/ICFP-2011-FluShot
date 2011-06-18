@@ -16,8 +16,7 @@ module Main (
     main
 ) where
 
-import LTG.Game
-import LTG.Cards
+import Main.Only
 
-main = putStrLn "Hello World!"
+main = onlyMain
 
