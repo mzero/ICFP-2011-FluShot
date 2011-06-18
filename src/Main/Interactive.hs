@@ -12,7 +12,7 @@
 --
 -----------------------------------------------------------------------------
 
-module Main.Only (
+module Main.Interactive (
   onlyMain
 ) where
 

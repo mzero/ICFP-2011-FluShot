@@ -16,7 +16,7 @@ module Main (
     main
 ) where
 
-import Main.Only
+import Main.Interactive
 
 main = onlyMain
 
