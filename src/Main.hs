@@ -16,7 +16,7 @@ module Main (
     main
 ) where
 
-import LTG.Types
+import LTG.Game
 import LTG.Cards
 
 main = putStrLn "Hello World!"

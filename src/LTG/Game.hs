@@ -12,7 +12,7 @@
 --
 -----------------------------------------------------------------------------
 
-module LTG.Types (
+module LTG.Game (
   Value(..), valueName, identity,
   Slot(..), alive, dead, zombie,
   Exec,

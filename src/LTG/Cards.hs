@@ -16,7 +16,7 @@ module LTG.Cards (
     cards
 ) where
 
-import LTG.Types
+import LTG.Game
 
 
 cards :: [(String, Value)]
