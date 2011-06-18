@@ -21,16 +21,16 @@ module LTG.Types (
   getOpSlot,
 ) where
 
-import qualified Control.Monad.State.Strict as S
 import qualified Data.Vector as V
+import qualified Data.Vector.Mutable as VM
 
 
 
 
-data Value = Num Int
-           | Func1 String (Value -> Exec Value)
-           | Func2 String (Value -> Value -> Exec Value)
-           | Func3 String (Value -> Value -> Value -> Exec Value)
+data Value = Num !Int
+           | Func1 !String (Value -> Exec Value)
+           | Func2 !String (Value -> Value -> Exec Value)
+           | Func3 !String (Value -> Value -> Value -> Exec Value)
 
 valueName :: Value -> String
 valueName (Num i) = show i
@@ -41,7 +41,7 @@ valueName (Func3 n _) = n
 identity = Func1 "I" return
 
 
-data Slot = Slot { slField :: Value, slVitality :: Int }
+data Slot = Slot { slField :: !Value, slVitality :: !Int }
 
 alive, dead, zombie :: Slot -> Bool
 alive s = slVitality s > 0
@@ -52,8 +52,8 @@ zombie s = slVitality s < 0
 type Memory = V.Vector Slot
 
 data State = State {
-    stPro :: Memory,
-    stOp :: Memory
+    stPro :: !Memory,
+    stOp :: !Memory
     }
 
 initState = State initMemory initMemory
@@ -66,41 +66,91 @@ initState = State initMemory initMemory
 
 
 data ExecState = ES
-    { esApplyCount :: Int
-    , esState :: State
-    , esApplyZombied :: Bool
+    { esApplyCount :: !Int
+    , esState :: !State
+    , esApplyZombied :: !Bool
     }
 
-type Exec = S.State ExecState
+newtype Exec a = Exec { runExec :: ExecState -> (Maybe a, ExecState) }
 
-execError :: Exec Value
-execError = return identity
--- how should this handle short circuiting? Need more complex monad
+instance Functor Exec where
+    f `fmap` m = Exec (\e -> let (r, e') = runExec m e in (f `fmap` r, e'))
+
+instance Monad Exec where
+    return a = Exec (\e -> (Just a, e))
+    m >>= g = Exec (\e -> case runExec m e of
+                            (Nothing, e') -> (Nothing, e')
+                            (Just a, e') -> runExec (g a) e')
+    fail msg = Exec (\e -> (Nothing, e))
+
+
+execError :: Exec a
+execError = fail undefined
+
+guard :: Bool -> Exec ()
+guard b = if b then return () else execError
+
+
+get :: Exec ExecState
+get = Exec (\e -> (Just e, e))
+
+put :: ExecState -> Exec ()
+put e = Exec (\_ -> (Just (), e))
+
+modify :: (ExecState -> ExecState) -> Exec ()
+modify f = get >>= put . f
+
+modifyState :: (State -> State) -> Exec ()
+modifyState f = modify (\e -> e { esState = f (esState e) })
+
+
+modifyProMemory, modifyOpMemory :: (Memory -> Memory) -> Exec ()
+modifyProMemory f = modifyState (\s -> s { stPro = f (stPro s) })
+modifyOpMemory f = modifyState (\s -> s { stOp = f (stOp s) })
+
+validSlot :: (State -> Memory) -> Int -> Exec Slot
+validSlot t i = do
+    m <- (t.esState) `fmap` get
+    guard (0 <= i  &&  i < V.length m)
+    return $ m V.! i
 
 getProSlot :: Int -> Exec Slot
-getProSlot = undefined
+getProSlot = validSlot stPro
 
 putProSlot :: Int -> Slot -> Exec ()
-putProSlot = undefined
+putProSlot i s = do
+    validSlot stPro i
+    modifyProMemory (V.modify (\v -> VM.write v i s))
+
 
 getOpSlotRev :: Int -> Exec Slot
-getOpSlotRev = undefined
+getOpSlotRev i = validSlot stOp (255 - i)
 
 putOpSlotRev :: Int -> Slot -> Exec ()
-putOpSlotRev = undefined
+putOpSlotRev i s = let i' = 255 - i in do
+    validSlot stOp i'
+    modifyOpMemory (V.modify (\v -> VM.write v i' s))
 
 getOpSlot :: Int -> Exec Slot
-getOpSlot = undefined
+getOpSlot = validSlot stOp
+
+
 
 apply :: Value -> Value -> Exec Value
--- need to guard on application count here
-apply (Num _) _ = execError
-apply (Func3 n f) v = return $ Func2 (applyName n v) (f v)
-apply (Func2 n f) v = return $ Func1 (applyName n v) (f v)
-apply (Func1 _ f) v = f v
+apply f v = do
+    e <- get
+    let ac = esApplyCount e
+    guard (ac < 1000)
+    put e { esApplyCount = ac + 1 }
+    apply' f v
+  where
+    apply' (Num _) _ = execError
+    apply' (Func3 n f) v = return $ Func2 (applyName n v) (f v)
+    apply' (Func2 n f) v = return $ Func1 (applyName n v) (f v)
+    apply' (Func1 _ f) v = f v
 
-applyName :: String -> Value -> String
-applyName s v = s ++ "(" ++ valueName v ++ ")"
+    applyName :: String -> Value -> String
+    applyName s v = s ++ "(" ++ valueName v ++ ")"
 
 
 
