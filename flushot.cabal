@@ -46,7 +46,7 @@ other-modules: LTG.Cards LTG.Game LTG.Play Main.Generate
                Main.Interactive Main.Utils
 ghc-prof-options:
 ghc-shared-options:
-ghc-options: -Wall -Werror
+ghc-options: -Wall -Werror -O2
 hugs-options:
 nhc98-options:
 jhc-options:

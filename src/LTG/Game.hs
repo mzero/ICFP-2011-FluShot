@@ -102,7 +102,7 @@ instance Monad Exec where
 instance MonadPlus Exec where
     mzero = fail "mzero"
     a `mplus` b = Exec (\e -> case runExec a e of
-                            (Nothing, _) -> runExec b e
+                            (Nothing, e') -> runExec b e'
                             k@(Just _, _) -> k)
 
 execute :: Exec a -> State -> State
