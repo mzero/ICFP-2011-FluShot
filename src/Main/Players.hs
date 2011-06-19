@@ -14,6 +14,10 @@
 
 module Main.Players (
     Player,
+    Turn,
+    twoPlayerTurn, onePlayerTurn,
+    takeTurns,
+
     playMain0,
     playMain1,
 ) where
@@ -24,20 +28,33 @@ import LTG.Play
 import Main.Utils
 
 type Player = State -> IO Move
+type Turn = Int -> State -> IO State
 
 
 playMain0, playMain1 :: IO ()
-playMain0 = playMain (stdoutEcho nullPlayer) stdinPlayer
-playMain1 = playMain  stdinPlayer           (stdoutEcho nullPlayer)
+playMain0 = takeTurns $ twoPlayerTurn (stdoutEcho nullPlayer) stdinPlayer
+playMain1 = takeTurns $ twoPlayerTurn stdinPlayer (stdoutEcho nullPlayer)
 
-playMain :: Player -> Player -> IO ()
-playMain p0 p1 = turn initState $ cycle [p0, p1]
+
+
+
+twoPlayerTurn :: Player -> Player -> Turn
+twoPlayerTurn p0 p1 = \n s -> do
+    s0 <- switchSides `fmap` onePlayerTurn p0 n s
+    s1 <- switchSides `fmap` onePlayerTurn p1 n s0
+    return s1
+
+onePlayerTurn :: Player -> Turn
+onePlayerTurn p = \_n s -> do
+    m <- p s
+    return $ execute (play m) s
+
+
+takeTurns :: Turn -> IO ()
+takeTurns t = go 1 initState
   where
-    turn s (p:ps) = do
-        m <- p s
-        let s' = execute (play m) s
-        turn (switchSides s') ps
-    turn _ [] = error "exhausted cycle?!"
+    go n s = t n s >>= go (n + 1)
+
 
 
 stdoutEcho :: Player -> Player

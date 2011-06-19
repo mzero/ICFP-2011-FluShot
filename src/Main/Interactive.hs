@@ -24,36 +24,25 @@ import Main.Utils
 import System.IO
 
 altMain :: IO ()
-altMain = interactiveStartup >> playAlt 1 initState
+altMain = interactiveMain$ twoPlayerTurn (interactivePlayer "0") (interactivePlayer "1")
 
 onlyMain :: IO ()
-onlyMain = interactiveStartup >> playOneSided 1 initState
+onlyMain = interactiveMain $ onePlayerTurn (interactivePlayer "0")
 
-interactiveStartup :: IO ()
-interactiveStartup = do
+
+interactiveMain :: Turn -> IO ()
+interactiveMain t = do
     putStrLn "FluShot LTG"
     hSetBuffering stdin LineBuffering
     hSetBuffering stdout LineBuffering
+    takeTurns $ interactiveTurn t
 
 
-playAlt :: Int -> State -> IO ()
-playAlt turn s = do
-    putStrLn $ "###### turn " ++ show turn
-    s0 <- switchSides `fmap` playTurn "0" s
-    s1 <- switchSides `fmap` playTurn "1" s0
-    playAlt (turn + 1) s1
+interactiveTurn :: Turn -> Turn
+interactiveTurn t = \n s -> do
+    putStrLn $ "###### turn " ++ show n
+    t n s
 
-
-playOneSided :: Int -> State -> IO ()
-playOneSided turn s = do
-    putStrLn $ "###### turn " ++ show turn
-    playTurn "0" s >>= playOneSided (turn + 1)
-
-
-playTurn :: String -> State -> IO State
-playTurn p s = do
-    m <- interactivePlayer p s
-    return $ execute (play m) s
 
 interactivePlayer :: String -> Player
 interactivePlayer p s = do
