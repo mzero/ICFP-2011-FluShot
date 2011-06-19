@@ -67,14 +67,14 @@ playTurn p s = do
         mc <- readCard `fmap` getLine
         case mc of
             Nothing -> reportError "unknown card"
-            Just (cn, c) -> do
+            Just c@(cn, _) -> do
                 putStrLn "slot no?"
                 ms <- readSlot `fmap` getLine
                 case ms of
                     Nothing -> reportError "not a slot"
                     Just i -> do
                         reportApply ("card " ++ cn) ("slot " ++ show i)
-                        return $ execute (play LeftApply i c) s
+                        return $ execute (play $ LeftMove c i) s
 
     slotThenCard = do
         putStrLn "slot no?"
@@ -86,9 +86,9 @@ playTurn p s = do
                 mc <- readCard `fmap` getLine
                 case mc of
                     Nothing -> reportError "not a slot"
-                    Just (cn, c) -> do
+                    Just c@(cn, _) -> do
                         reportApply ("slot " ++ show i) ("card " ++ cn)
-                        return $ execute (play RightApply i c) s
+                        return $ execute (play $ RightMove i c) s
 
 
 

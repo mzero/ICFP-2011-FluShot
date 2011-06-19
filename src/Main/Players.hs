@@ -20,8 +20,10 @@ module Main.Players (
 import LTG.Cards
 import LTG.Game
 import LTG.Play
-import LTG.Player
 import Main.Utils
+
+type Player = State -> IO Move
+
 
 playMain0, playMain1 :: IO ()
 playMain0 = playMain (stdoutEcho nullPlayer) stdinPlayer
@@ -31,23 +33,24 @@ playMain :: Player -> Player -> IO ()
 playMain p0 p1 = turn initState $ cycle [p0, p1]
   where
     turn s (p:ps) = do
-        (Move app i (_cn, cv)) <- p s
-        let s' = execute (play app i cv) s
+        m <- p s
+        let s' = execute (play m) s
         turn (switchSides s') ps
     turn _ [] = error "exhausted cycle?!"
 
 
 stdoutEcho :: Player -> Player
 stdoutEcho p = \s -> do
-    m@(Move app i (cn, _cv)) <- p s
-    case app of
-        LeftApply -> mapM_ putStrLn ["1", cn, show i]
-        RightApply -> mapM_ putStrLn ["2", show i, cn]
+    m <- p s
+    let l = case m of
+                LeftMove (cn, _) i -> ["1", cn, show i]
+                RightMove i (cn, _) -> ["2", show i, cn]
+    mapM_ putStrLn l
     return m
 
 
 nullPlayer :: Player
-nullPlayer _ = return $ Move LeftApply 0 cardIdentity
+nullPlayer _ = return $ LeftMove cardIdentity 0
 
 
 stdinPlayer :: Player
@@ -61,15 +64,15 @@ stdinPlayer _ = do
     cardThenSlot = do
         mc <- readCard `fmap` getLine
         ms <- readSlot `fmap` getLine
-        validate LeftApply ms mc
+        validate (flip LeftMove) ms mc
     slotThenCard = do
         ms <- readSlot `fmap` getLine
         mc <- readCard `fmap` getLine
-        validate RightApply ms mc
-    validate app ms mc = case (ms, mc) of
+        validate RightMove ms mc
+    validate mConst ms mc = case (ms, mc) of
         (Nothing, _) -> error "read bad slot"
         (_, Nothing) -> error "read bad card"
-        (Just i, Just c) -> return $ Move app i c
+        (Just i, Just c) -> return $ mConst i c
 
 
 

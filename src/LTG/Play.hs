@@ -14,18 +14,31 @@
 
 module LTG.Play (
     Application(..),
+    Move(..),
     play,
 ) where
 
 import Control.Monad
+import LTG.Cards
 import LTG.Game
 
 
 data Application = LeftApply | RightApply
 
+data Move = LeftMove Card Int | RightMove Int Card
 
-leftAppMove :: Int -> Value -> Exec ()
-leftAppMove i c = do
+play :: Move -> Exec ()
+play m = do
+    activateZombies
+    case m of
+        LeftMove (_, c) i -> leftAppMove c i
+        RightMove i (_, c) -> rightAppMove i c
+
+
+
+
+leftAppMove :: Value -> Int -> Exec ()
+leftAppMove c i = do
     s <- getProSlot i
     v <- (precondition (alive s) >> apply c (slField s)) `mplus` return identity
     s' <- getProSlot i -- must refetch lest it's been modified
@@ -38,9 +51,6 @@ rightAppMove i c = do
     s' <- getProSlot i -- must refetch lest it's been modified
     putProSlot i $ s' { slField = v }
 
-appMove :: Application -> Int -> Value -> Exec ()
-appMove LeftApply = leftAppMove
-appMove RightApply = rightAppMove
 
 zombieMove :: Int -> Exec ()
 zombieMove i = do
@@ -56,8 +66,6 @@ activateZombies = do
     zombify $ sequence_ $ map ((`mplus` return ()).zombieMove) [lo..hi]
 
 
-play :: Application -> Int -> Value -> Exec ()
-play app i c = do
-    activateZombies
-    appMove app i c
+
+
 
