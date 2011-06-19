@@ -19,6 +19,7 @@ module Main.Interactive (
 
 import LTG.Game
 import LTG.Play
+import Main.Players
 import Main.Utils
 import System.IO
 
@@ -51,6 +52,11 @@ playOneSided turn s = do
 
 playTurn :: String -> State -> IO State
 playTurn p s = do
+    m <- interactivePlayer p s
+    return $ execute (play m) s
+
+interactivePlayer :: String -> Player
+interactivePlayer p s = do
     putStrLn $ "*** player " ++ p ++ "'s turn, with slots:"
     mapM_ putStrLn $ showProState s
     putStrLn "(1) apply card to slot, or (2) apply slot to card?"
@@ -60,7 +66,7 @@ playTurn p s = do
         Just LeftApply -> cardThenSlot
         Just RightApply -> slotThenCard
   where
-    reportError msg = putStrLn ("Exception: Failure(" ++ show msg ++ ")") >> return s
+    reportError msg = putStrLn ("Exception: Failure(" ++ show msg ++ ")") >> return nullMove
     reportApply a b = putStrLn $ "player " ++ p ++ " applied " ++ a ++ " to " ++ b
     cardThenSlot = do
         putStrLn "card name?"
@@ -74,7 +80,7 @@ playTurn p s = do
                     Nothing -> reportError "not a slot"
                     Just i -> do
                         reportApply ("card " ++ cn) ("slot " ++ show i)
-                        return $ execute (play $ LeftMove c i) s
+                        return $ LeftMove c i
 
     slotThenCard = do
         putStrLn "slot no?"
@@ -88,7 +94,7 @@ playTurn p s = do
                     Nothing -> reportError "not a slot"
                     Just c@(cn, _) -> do
                         reportApply ("slot " ++ show i) ("card " ++ cn)
-                        return $ execute (play $ RightMove i c) s
+                        return $ RightMove i c
 
 
 

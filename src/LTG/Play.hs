@@ -16,6 +16,7 @@ module LTG.Play (
     Application(..),
     Move(..),
     play,
+    nullMove,
 ) where
 
 import Control.Monad
@@ -34,6 +35,8 @@ play m = do
         LeftMove (_, c) i -> leftAppMove c i
         RightMove i (_, c) -> rightAppMove i c
 
+nullMove :: Move                    -- a move that does nothing
+nullMove = LeftMove cardZero 0      -- always fails with no side-effects
 
 
 

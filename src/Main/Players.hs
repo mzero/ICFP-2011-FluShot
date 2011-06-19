@@ -13,6 +13,7 @@
 -----------------------------------------------------------------------------
 
 module Main.Players (
+    Player,
     playMain0,
     playMain1,
 ) where
