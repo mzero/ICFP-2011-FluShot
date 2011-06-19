@@ -18,6 +18,7 @@ module Main (
 
 import Main.Generate
 import Main.Interactive
+import Main.Players
 import System.Environment
 
 
@@ -28,4 +29,6 @@ main = do
     ["alt"] -> altMain
     ["only"] -> onlyMain
     ["gen", n] -> genMain n
+    ["0"] -> playMain0
+    ["1"] -> playMain1
     _ -> putStrLn "huh?"

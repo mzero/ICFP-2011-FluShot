@@ -15,6 +15,9 @@
 module LTG.Cards (
     Card,
     cards,
+    cardIdentity, cardZero, cardSucc, cardDouble, cardGet, cardPut,
+    cardS, cardK, cardInc, cardDec, cardAttack, cardHelp, cardCopy,
+    cardRevive, cardZombie,
 ) where
 
 import LTG.Game

@@ -17,10 +17,7 @@ module Main.Interactive (
   onlyMain,
 ) where
 
-import Control.Monad (join)
-import Data.Maybe (listToMaybe)
 import LTG.Game
-import LTG.Cards
 import LTG.Play
 import Main.Utils
 import System.IO
@@ -93,22 +90,6 @@ playTurn p s = do
                         reportApply ("slot " ++ show i) ("card " ++ cn)
                         return $ execute (play RightApply i c) s
 
-
-readApply :: String -> Maybe Application
-readApply = join . (decodeApply `fmap`) . readAs
-  where
-    decodeApply :: Int -> Maybe Application
-    decodeApply 1 = Just LeftApply
-    decodeApply 2 = Just RightApply
-    decodeApply _ = Nothing
-
-readCard :: String -> Maybe Card
-readCard s =  listToMaybe $ filter ((==s).fst) cards
-
-readSlot :: String -> Maybe Int
-readSlot = join . (inRange `fmap`) . readAs
-  where
-    inRange i = if 0 <= i && i <= 255 then Just i else Nothing
 
 
 
