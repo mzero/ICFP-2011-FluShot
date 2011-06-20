@@ -40,7 +40,7 @@ initDisplayState :: DisplayState
 initDisplayState = DS { dsPage = 0 }
 
 liveMain :: MVar DisplayState -> Turn -> IO() -> IO ()
-liveMain _mds t cleanup = do
+liveMain mds t cleanup = do
     tid <- cleanStart
     finally (takeTurns t) (cleanup >> cleanExit tid)
   where
@@ -51,10 +51,9 @@ liveMain _mds t cleanup = do
         nl False
         intrFlush False
         keypad stdScr True
-        -- forkIO $ processInput mds
-        return True
-    cleanExit _tid = do
-        -- killThread tid
+        forkIO $ processInput mds
+    cleanExit tid = do
+        killThread tid
         (h, _w) <- scrSize
         move (h-1) 0
         refresh
@@ -109,11 +108,10 @@ updateDisplay :: IO ()
 updateDisplay = do
     move 0 0
     refresh
-{-
+
 processInput :: (MVar DisplayState) -> IO ()
 processInput mds = do
     key <- getCh
-    putStrLn $ "### " ++ show key ++ " ###"
     case key of
         KeyChar c | '1' <= c && c <= '4' -> page (fromEnum c - fromEnum '1')
         KeyF i | 1 <= i && i <= 4 -> page (i - 1)
@@ -121,4 +119,4 @@ processInput mds = do
     processInput mds
   where
     page n = modifyMVar_ mds (\ds -> return $ ds { dsPage = n })
--}
+
