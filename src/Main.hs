@@ -18,6 +18,7 @@ module Main (
 
 import Main.Generate
 import Main.Interactive
+import Main.Live
 import Main.Players
 import System.Environment
 
@@ -31,4 +32,5 @@ main = do
     ["gen", n] -> genMain n
     ["0"] -> playMain0
     ["1"] -> playMain1
+    ["live"] -> liveTournamentMain
     _ -> putStrLn "huh?"

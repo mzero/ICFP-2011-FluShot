@@ -20,6 +20,9 @@ module Main.Players (
 
     playMain0,
     playMain1,
+
+    nullPlayer,
+    stdinPlayer,
 ) where
 
 import LTG.Cards
