@@ -16,12 +16,12 @@ module Main.Live (
     liveTournamentMain,
 ) where
 
+import Control.Exception
 import LTG.Game
 import Main.Players
 import System.Exit
-import System.Posix.Signals
-   ( Handler (Catch), installHandler, sigINT, sigTERM )
 import UI.HSCurses.Curses
+
 
 liveTournamentMain :: IO ()
 liveTournamentMain = liveMain $ twoPlayerTurn p0 p1
@@ -37,10 +37,9 @@ data Side = LeftSide | RightSide
 liveMain :: Turn -> IO ()
 liveMain t = do
     initCurses
-    mapM_ ( \signal -> installHandler signal
-        (Catch cleanExit) Nothing ) [sigINT, sigTERM]
-    takeTurns $ liveTurn t
-    cleanExit
+    finally
+        (takeTurns $ liveTurn t)
+        cleanExit
   where
     cleanExit = do
         (h, _w) <- scrSize
@@ -48,7 +47,6 @@ liveMain t = do
         refresh
         update
         endWin
-        putStrLn ""
         exitSuccess
 
 liveTurn :: Turn -> Turn
